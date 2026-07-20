@@ -24,7 +24,8 @@ class OpenMeteoProvider:
             "longitude": spot.longitude,
             "hourly": "wind_speed_10m,wind_gusts_10m,wind_direction_10m,"
                       "temperature_2m,cloud_cover,shortwave_radiation,surface_pressure,"
-                      "boundary_layer_height",
+                      "boundary_layer_height,precipitation_probability,precipitation,"
+                      "weather_code,cape",
             "wind_speed_unit": "kn",
             "timezone": spot.timezone,
             # Chiedere esplicitamente l'intera giornata e' essenziale nei run
@@ -61,6 +62,12 @@ class OpenMeteoProvider:
             radiation = hourly.get("shortwave_radiation") or [None] * len(times)
             pressure = hourly.get("surface_pressure") or [None] * len(times)
             boundary_layer = hourly.get("boundary_layer_height") or [None] * len(times)
+            precipitation_probability = (
+                hourly.get("precipitation_probability") or [None] * len(times)
+            )
+            precipitation = hourly.get("precipitation") or [None] * len(times)
+            weather_code = hourly.get("weather_code") or [None] * len(times)
+            cape = hourly.get("cape") or [None] * len(times)
 
             def _opt(seq, i):
                 value = seq[i] if i < len(seq) else None
@@ -84,6 +91,14 @@ class OpenMeteoProvider:
                         radiation=_opt(radiation, i),
                         pressure_hpa=_opt(pressure, i),
                         boundary_layer_height_m=_opt(boundary_layer, i),
+                        precipitation_probability_pct=_opt(precipitation_probability, i),
+                        precipitation_mm=_opt(precipitation, i),
+                        weather_code=(
+                            int(weather_code[i])
+                            if i < len(weather_code) and weather_code[i] is not None
+                            else None
+                        ),
+                        cape_jkg=_opt(cape, i),
                     )
                 )
             if not hours:

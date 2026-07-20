@@ -38,6 +38,10 @@ class ForecastHour(BaseModel):
     radiation: float | None = None
     pressure_hpa: float | None = None
     boundary_layer_height_m: float | None = None
+    precipitation_probability_pct: float | None = None
+    precipitation_mm: float | None = None
+    weather_code: int | None = None
+    cape_jkg: float | None = None
 
 
 class ForecastDay(BaseModel):

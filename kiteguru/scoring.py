@@ -32,6 +32,45 @@ def direction_category(direction: str, spot: SpotConfig) -> str:
     return "neutral"
 
 
+def shore_orientation(direction: str, spot: SpotConfig) -> str:
+    """Operational coast-relative label derived from the spot direction contract."""
+    category = direction_category(direction, spot)
+    return {
+        "preferred": "on-shore / side-on-shore",
+        "acceptable": "side-shore",
+        "caution": "side-shore con cautela",
+        "bad": "off-shore / side-off-shore",
+        "neutral": "orientamento non classificato",
+    }[category]
+
+
+def weather_risk_summary(hours: list[ForecastHour]) -> dict[str, object]:
+    """Expose model hazard indicators without turning them into a safety guarantee."""
+    usable = useful_hours(hours)
+    probabilities = [
+        hour.precipitation_probability_pct for hour in usable
+        if hour.precipitation_probability_pct is not None
+    ]
+    precipitation = [
+        hour.precipitation_mm for hour in usable if hour.precipitation_mm is not None
+    ]
+    cape = [hour.cape_jkg for hour in usable if hour.cape_jkg is not None]
+    thunderstorm_hours = [
+        hour.datetime.hour for hour in usable
+        if hour.weather_code is not None and 95 <= hour.weather_code <= 99
+    ]
+    available = bool(probabilities or precipitation or cape or any(
+        hour.weather_code is not None for hour in usable
+    ))
+    return {
+        "status": "VALUTATO" if available else "NON_VALUTATO",
+        "max_precipitation_probability_pct": max(probabilities) if probabilities else None,
+        "precipitation_sum_mm": round(sum(precipitation), 2) if precipitation else None,
+        "max_cape_jkg": max(cape) if cape else None,
+        "thunderstorm_hours": thunderstorm_hours,
+    }
+
+
 def minimum_wind(profile: KiteProfile) -> float:
     return 9.0 if profile.board == "foil" else 13.0
 

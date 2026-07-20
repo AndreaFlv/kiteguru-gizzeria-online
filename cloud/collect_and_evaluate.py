@@ -30,6 +30,56 @@ def _write_json_atomic(path: Path, payload: dict) -> None:
     temporary.replace(path)
 
 
+def _write_json_atomic_if_changed(
+    path: Path, payload: dict, *, ignored_top_level_keys: tuple[str, ...] = (),
+) -> bool:
+    """Write only when semantic content changed; return whether a write occurred."""
+    if path.exists():
+        try:
+            current = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            current = None
+        if isinstance(current, dict):
+            current_semantic = {
+                key: value for key, value in current.items()
+                if key not in ignored_top_level_keys
+            }
+            new_semantic = {
+                key: value for key, value in payload.items()
+                if key not in ignored_top_level_keys
+            }
+            if current_semantic == new_semantic:
+                return False
+    _write_json_atomic(path, payload)
+    return True
+
+
+def _write_actual_if_improved(path: Path, payload: dict, *, local_today: date) -> bool:
+    """Keep completed historical truth stable as the rolling source window moves."""
+    if path.exists():
+        try:
+            current = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            current = None
+        payload_day = date.fromisoformat(str(payload["date"]))
+        if isinstance(current, dict) and payload_day < local_today:
+            current_hours = {
+                int(row["hour"]) for row in current.get("hours", [])
+                if row.get("hour") is not None
+            }
+            new_hours = {
+                int(row["hour"]) for row in payload.get("hours", [])
+                if row.get("hour") is not None
+            }
+            if current.get("complete_useful_hours"):
+                return False
+            if len(new_hours) <= len(current_hours):
+                return False
+    return _write_json_atomic_if_changed(
+        path, payload, ignored_top_level_keys=("collected_at_utc",),
+    )
+
+
 def freeze_forecast(target: date) -> tuple[Path, bool]:
     """Create the first snapshot for target; never overwrite an existing one."""
     path = DATA / "snapshots" / f"{target.isoformat()}.json"
@@ -59,6 +109,10 @@ def freeze_forecast(target: date) -> tuple[Path, bool]:
             "direction_cardinal": raw.wind_direction_cardinal,
             "radiation": raw.radiation,
             "boundary_layer_height_m": raw.boundary_layer_height_m,
+            "precipitation_probability_pct": raw.precipitation_probability_pct,
+            "precipitation_mm": raw.precipitation_mm,
+            "weather_code": raw.weather_code,
+            "cape_jkg": raw.cape_jkg,
             "regional": regional.get(hour, {}),
         })
     if len(hours) != 10:
@@ -94,9 +148,10 @@ def collect_actuals() -> list[Path]:
             })
     written = []
     collected_at = datetime.now(ZoneInfo("UTC")).isoformat(timespec="seconds")
+    local_today = datetime.now(ZoneInfo(spot.timezone)).date()
     for day, hours in by_date.items():
         path = DATA / "actual" / f"{day}.json"
-        _write_json_atomic(path, {
+        changed = _write_actual_if_improved(path, {
             "schema_version": 1,
             "spot": spot.name,
             "date": day,
@@ -104,8 +159,9 @@ def collect_actuals() -> list[Path]:
             "source": HolfuyChartProvider.source,
             "complete_useful_hours": len(hours) == 10,
             "hours": hours,
-        })
-        written.append(path)
+        }, local_today=local_today)
+        if changed:
+            written.append(path)
     return written
 
 
@@ -138,10 +194,18 @@ def evaluate() -> dict:
         "schema_version": 1,
         "generated_at_utc": datetime.now(ZoneInfo("UTC")).isoformat(timespec="seconds"),
         "paired_dates": paired_dates,
-        "raw_forecast": operational_summary(raw_records),
-        "thermal_scenario_research_only": operational_summary(scenario_records),
+        "raw_forecast": operational_summary(
+            raw_records, expected_hours_per_day=10,
+        ),
+        "thermal_scenario_research_only": operational_summary(
+            scenario_records, expected_hours_per_day=10,
+        ),
     }
-    _write_json_atomic(DATA / "metrics" / "latest.json", payload)
+    _write_json_atomic_if_changed(
+        DATA / "metrics" / "latest.json",
+        payload,
+        ignored_top_level_keys=("generated_at_utc",),
+    )
     return payload
 
 
@@ -158,7 +222,7 @@ def main() -> None:
     print(json.dumps({
         "snapshot": str(snapshot.relative_to(ROOT)),
         "snapshot_created": created,
-        "actual_files": len(actuals),
+        "actual_files_changed": len(actuals),
         "paired_dates": len(metrics["paired_dates"]),
     }, ensure_ascii=False))
 

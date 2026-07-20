@@ -21,7 +21,12 @@ from kiteguru.providers.holfuy_chart import HolfuyChartProvider
 from kiteguru.providers.open_meteo import OpenMeteoProvider
 from kiteguru.providers.open_meteo_models import fetch_model_winds
 from kiteguru.providers.regional import fetch_regional_features
-from kiteguru.scoring import assess_day, minimum_wind
+from kiteguru.scoring import (
+    assess_day,
+    minimum_wind,
+    shore_orientation,
+    weather_risk_summary,
+)
 from kiteguru.thermal_model import train as train_thermal_model
 from kiteguru.thermal_onset import estimate_onset
 
@@ -147,6 +152,7 @@ raw_assessment = assess_day(
     historical_rows=[],
 )
 onset = estimate_onset(corrected_hours, spot, profile, [])
+risk = weather_risk_summary(raw_hours)
 
 # Il prior termico stateless e' uno scenario, non una misura calibrata sul DB.
 # Da solo non puo' promuovere una giornata a VAI/VAI FORTE.
@@ -171,17 +177,27 @@ st.caption(
     "Controlla sempre la stazione prima di entrare in acqua."
 )
 
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Finestra migliore", (
-    f"{assessment.best_window.start}–{assessment.best_window.end}"
-    if assessment.best_window.available else "Nessuna"
+c1, c2, c3, c4, c5 = st.columns(5)
+c1.metric("Finestra grezza", (
+    f"{raw_assessment.best_window.start}–{raw_assessment.best_window.end}"
+    if raw_assessment.best_window.available else "Nessuna"
 ))
-c2.metric("Vento atteso", (
+c2.metric("Open-Meteo", (
+    f"{raw_assessment.wind_avg_min_knots}–{raw_assessment.wind_avg_max_knots} kn"
+    if raw_assessment.wind_avg_min_knots is not None else "—"
+))
+c3.metric("Scenario non calibrato", (
     f"{assessment.wind_avg_min_knots}–{assessment.wind_avg_max_knots} kn"
     if assessment.wind_avg_min_knots is not None else "—"
 ))
-c3.metric("Direzione", assessment.dominant_direction or "—")
-c4.metric("Ingresso utile", onset.get("onset_label") or "Non previsto")
+c4.metric("Direzione", raw_assessment.dominant_direction or "—")
+c5.metric("Ingresso scenario", onset.get("onset_label") or "Non previsto")
+if raw_assessment.dominant_direction:
+    st.caption(
+        "Orientamento rispetto alla costa: "
+        f"**{shore_orientation(raw_assessment.dominant_direction, spot)}**. "
+        "La classificazione usa il contratto direzionale configurato per Gizzeria Lido."
+    )
 
 useful_raw = {h.datetime.hour: h for h in raw_hours if 10 <= h.datetime.hour <= 19}
 useful_corrected = {h.datetime.hour: h for h in corrected_hours if 10 <= h.datetime.hour <= 19}
@@ -214,6 +230,39 @@ fig.add_hline(y=threshold, line_dash="dash", line_color="#64748b",
 fig.update_layout(height=410, yaxis_title="nodi", xaxis_title="ora locale",
                   legend=dict(orientation="h", y=1.12), margin=dict(l=10, r=10, t=45, b=10))
 st.plotly_chart(fig, width="stretch")
+
+st.subheader("Sicurezza meteo")
+if risk["status"] == "NON_VALUTATO":
+    st.warning("Precipitazioni e indicatori convettivi non disponibili: rischio meteo NON_VALUTATO.")
+else:
+    r1, r2, r3, r4 = st.columns(4)
+    r1.metric(
+        "Prob. precipitazione max",
+        f"{risk['max_precipitation_probability_pct']:.0f}%"
+        if risk["max_precipitation_probability_pct"] is not None else "n/d",
+    )
+    r2.metric(
+        "Precipitazione 10–19",
+        f"{risk['precipitation_sum_mm']:.1f} mm"
+        if risk["precipitation_sum_mm"] is not None else "n/d",
+    )
+    r3.metric(
+        "CAPE max",
+        f"{risk['max_cape_jkg']:.0f} J/kg"
+        if risk["max_cape_jkg"] is not None else "n/d",
+    )
+    thunderstorm_hours = risk["thunderstorm_hours"]
+    r4.metric(
+        "Temporale (codice WMO)",
+        ", ".join(f"{hour:02d}:00" for hour in thunderstorm_hours)
+        if thunderstorm_hours else "non indicato",
+    )
+    if thunderstorm_hours:
+        st.error("Il modello indica temporali nelle ore utili: non entrare in acqua.")
+    st.caption(
+        "Indicatori del forecast, non nowcast: controlla radar, fulminazioni e avvisi locali. "
+        "La probabilità di precipitazione Open-Meteo deriva da un ensemble a risoluzione più grossolana."
+    )
 
 tab_hours, tab_models, tab_live, tab_skill, tab_method = st.tabs(
     ["Ore", "Confronto modelli", "Stazione ora", "Affidabilità", "Come leggerla"]
@@ -288,5 +337,6 @@ with tab_method:
 st.divider()
 st.caption(
     f"Fonte forecast: {payload['source']} · fuso orario Europe/Rome · cache 15 minuti · "
-    f"generato {datetime.now(ZoneInfo(spot.timezone)):%d/%m/%Y %H:%M}"
+    f"pagina aggiornata {datetime.now(ZoneInfo(spot.timezone)):%d/%m/%Y %H:%M} · "
+    "età del ciclo NWP non esposta dall'API best-match"
 )
