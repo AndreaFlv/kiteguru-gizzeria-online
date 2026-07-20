@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+*.db
+*.sqlite*
+*.pkl
+*.joblib
+.env*
+.streamlit/secrets.toml

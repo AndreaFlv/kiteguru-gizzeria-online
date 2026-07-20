@@ -1,0 +1,18 @@
+{
+  "gizzeria": {
+    "name": "Gizzeria / Hang Loose Beach",
+    "latitude": 38.9369,
+    "longitude": 16.2106,
+    "timezone": "Europe/Rome",
+    "preferred_directions": ["W", "WSW", "WNW"],
+    "acceptable_directions": ["SW", "NW"],
+    "bad_directions": ["E", "ENE", "NE", "ESE", "SE", "SSE"],
+    "holfuy_station": 1178,
+    "thermal_seed": { "pre": 3, "termico": 7, "post": 4 },
+    "region": {
+      "mare": [38.95, 15.95],
+      "entroterra": [38.95, 16.45],
+      "ionio": [38.80, 16.60]
+    }
+  }
+}

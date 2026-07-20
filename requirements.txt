@@ -1,0 +1,9 @@
+streamlit>=1.40,<2
+pandas>=2.0,<3
+plotly>=5.20,<7
+numpy>=1.26,<3
+requests>=2.31,<3
+pydantic>=2.7,<3
+python-dateutil>=2.9,<3
+typer>=0.12,<1
+rich>=13.7,<15
