@@ -1,11 +1,11 @@
 {
-  "collected_at_utc": "2026-07-20T08:04:19+00:00",
+  "collected_at_utc": "2026-07-20T08:07:15+00:00",
   "complete_useful_hours": true,
   "date": "2026-07-15",
   "hours": [
     {
       "direction_cardinal": "WSW",
-      "direction_deg": 249.46828814149978,
+      "direction_deg": 249.46828814149976,
       "hour": 10,
       "wind_gust_kn": 7.6,
       "wind_speed_kn": 5.1
