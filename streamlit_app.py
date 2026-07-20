@@ -48,6 +48,7 @@ st.markdown(
 spot = get_spot("gizzeria")
 today = datetime.now(ZoneInfo(spot.timezone)).date()
 target = today + timedelta(days=1)
+WEEKDAYS_IT = ("lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica")
 
 
 @st.cache_data(ttl=900, show_spinner=False)
@@ -89,7 +90,7 @@ st.markdown(
     f"""
     <div class="kg-hero">
       <h1>🌬️ KiteGuru · Gizzeria</h1>
-      <p>Previsione di domani · {target:%A %d/%m/%Y} · aggiornata automaticamente</p>
+      <p>Previsione di domani · {WEEKDAYS_IT[target.weekday()]} {target:%d/%m/%Y} · aggiornata automaticamente</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -121,19 +122,38 @@ assessment = assess_day(
     profile=profile,
     historical_rows=[],
 )
+raw_assessment = assess_day(
+    spot=spot,
+    date_label="domani",
+    target=target,
+    hours=raw_hours,
+    source=payload["source"],
+    source_is_real=True,
+    profile=profile,
+    historical_rows=[],
+)
 onset = estimate_onset(corrected_hours, spot, profile, [])
+
+# Il prior termico stateless e' uno scenario, non una misura calibrata sul DB.
+# Da solo non puo' promuovere una giornata a VAI/VAI FORTE.
+display_decision = raw_assessment.decision
+if (
+    raw_assessment.decision not in {"VAI", "VAI FORTE"}
+    and assessment.decision in {"VAI", "VAI FORTE"}
+):
+    display_decision = "CONTROLLA 14-16"
 
 decision_color = {
     "LASCIA PERDERE": "#b91c1c", "CONTROLLA 14-16": "#0e7490",
     "MARGINALE": "#a16207", "VAI": "#15803d", "VAI FORTE": "#1d4ed8",
-}.get(assessment.decision, "#334155")
+}.get(display_decision, "#334155")
 
 st.markdown(
-    f'<div class="kg-verdict" style="color:{decision_color}">{assessment.decision}</div>',
+    f'<div class="kg-verdict" style="color:{decision_color}">{display_decision}</div>',
     unsafe_allow_html=True,
 )
 st.caption(
-    "Verdetto calcolato sul forecast meteorologico e su una correzione termica fisica conservativa. "
+    "Il termico non calibrato viene mostrato come scenario, ma non può da solo generare un VAI. "
     "Controlla sempre la stazione prima di entrare in acqua."
 )
 
@@ -159,7 +179,7 @@ for hour in sorted(useful_raw):
     rows.append({
         "Ora": f"{hour:02d}:00",
         "Open-Meteo": round(raw.wind_speed_knots, 1),
-        "Atteso termico": round(corrected.wind_speed_knots, 1),
+        "Scenario termico": round(corrected.wind_speed_knots, 1),
         "Raffica": round(raw.wind_gusts_knots, 1),
         "Direzione": raw.wind_direction_cardinal,
         "Radiazione": raw.radiation,
@@ -171,7 +191,7 @@ df = pd.DataFrame(rows)
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=df["Ora"], y=df["Open-Meteo"], name="Open-Meteo",
                          mode="lines+markers", line=dict(color="#2563eb", width=2)))
-fig.add_trace(go.Scatter(x=df["Ora"], y=df["Atteso termico"], name="Atteso con termico",
+fig.add_trace(go.Scatter(x=df["Ora"], y=df["Scenario termico"], name="Scenario termico",
                          mode="lines+markers", line=dict(color="#059669", width=3)))
 fig.add_trace(go.Scatter(x=df["Ora"], y=df["Raffica"], name="Raffica grezza",
                          mode="lines", line=dict(color="#f59e0b", dash="dot")))
@@ -185,7 +205,7 @@ tab_hours, tab_models, tab_live, tab_method = st.tabs(
     ["Ore", "Confronto modelli", "Stazione ora", "Come leggerla"]
 )
 with tab_hours:
-    display = df[["Ora", "Open-Meteo", "Atteso termico", "Raffica", "Direzione"]].copy()
+    display = df[["Ora", "Open-Meteo", "Scenario termico", "Raffica", "Direzione"]].copy()
     st.dataframe(display, hide_index=True, width="stretch")
 
 with tab_models:
@@ -222,7 +242,8 @@ with tab_method:
     st.markdown(
         f"""
         - **Open-Meteo** è il forecast atmosferico grezzo.
-        - **Atteso con termico** applica il prior fisico locale solo con direzioni compatibili.
+        - **Scenario termico** applica il prior fisico locale solo con direzioni compatibili.
+        - Lo scenario non calibrato non può da solo promuovere il verdetto a **VAI**.
         - Il massimo rinforzo applicato domani è **{max_boost:.1f} kn**.
         - La soglia del tuo assetto è **{threshold:.0f} kn**.
         - La versione pubblica non espone il database o i file del computer locale.
