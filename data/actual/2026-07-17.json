@@ -1,0 +1,80 @@
+{
+  "collected_at_utc": "2026-07-20T08:04:19+00:00",
+  "complete_useful_hours": true,
+  "date": "2026-07-17",
+  "hours": [
+    {
+      "direction_cardinal": "WSW",
+      "direction_deg": 256.022527603336,
+      "hour": 10,
+      "wind_gust_kn": 8.1,
+      "wind_speed_kn": 5.8
+    },
+    {
+      "direction_cardinal": "W",
+      "direction_deg": 267.9997714557178,
+      "hour": 11,
+      "wind_gust_kn": 8.1,
+      "wind_speed_kn": 5.4
+    },
+    {
+      "direction_cardinal": "WNW",
+      "direction_deg": 283.23591973289035,
+      "hour": 12,
+      "wind_gust_kn": 14.6,
+      "wind_speed_kn": 10.4
+    },
+    {
+      "direction_cardinal": "NW",
+      "direction_deg": 308.9995427721278,
+      "hour": 13,
+      "wind_gust_kn": 15.1,
+      "wind_speed_kn": 12.6
+    },
+    {
+      "direction_cardinal": "WNW",
+      "direction_deg": 292.2610869398201,
+      "hour": 14,
+      "wind_gust_kn": 13.5,
+      "wind_speed_kn": 11.1
+    },
+    {
+      "direction_cardinal": "W",
+      "direction_deg": 268.74931811151225,
+      "hour": 15,
+      "wind_gust_kn": 12.4,
+      "wind_speed_kn": 9.7
+    },
+    {
+      "direction_cardinal": "W",
+      "direction_deg": 278.50229120393163,
+      "hour": 16,
+      "wind_gust_kn": 11.3,
+      "wind_speed_kn": 8.9
+    },
+    {
+      "direction_cardinal": "WNW",
+      "direction_deg": 292.5283575502389,
+      "hour": 17,
+      "wind_gust_kn": 10.8,
+      "wind_speed_kn": 9.2
+    },
+    {
+      "direction_cardinal": "W",
+      "direction_deg": 276.98736081227696,
+      "hour": 18,
+      "wind_gust_kn": 10.8,
+      "wind_speed_kn": 7.7
+    },
+    {
+      "direction_cardinal": "SW",
+      "direction_deg": 228.75015816494366,
+      "hour": 19,
+      "wind_gust_kn": 5.9,
+      "wind_speed_kn": 4.6
+    }
+  ],
+  "schema_version": 1,
+  "source": "Holfuy (grafico pubblico)",
+  "spot": "Gizzeria / Hang Loose Beach"
+}

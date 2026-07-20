@@ -6,6 +6,8 @@ task Windows o segreti locali: ogni visita ricava il forecast dalle fonti web.
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+import json
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -74,6 +76,18 @@ def load_models(target_iso: str):
 def load_station():
     obs = HolfuyChartProvider().fetch_current(spot)
     return obs.model_dump(mode="python") if obs else None
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def load_measured_skill():
+    candidates = [
+        Path(__file__).resolve().parents[1] / "data" / "metrics" / "latest.json",
+        Path(__file__).resolve().parent / "data" / "metrics" / "latest.json",
+    ]
+    for path in candidates:
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+    return None
 
 
 with st.sidebar:
@@ -201,8 +215,8 @@ fig.update_layout(height=410, yaxis_title="nodi", xaxis_title="ora locale",
                   legend=dict(orientation="h", y=1.12), margin=dict(l=10, r=10, t=45, b=10))
 st.plotly_chart(fig, width="stretch")
 
-tab_hours, tab_models, tab_live, tab_method = st.tabs(
-    ["Ore", "Confronto modelli", "Stazione ora", "Come leggerla"]
+tab_hours, tab_models, tab_live, tab_skill, tab_method = st.tabs(
+    ["Ore", "Confronto modelli", "Stazione ora", "Affidabilità", "Come leggerla"]
 )
 with tab_hours:
     display = df[["Ora", "Open-Meteo", "Scenario termico", "Raffica", "Direzione"]].copy()
@@ -237,6 +251,25 @@ with tab_live:
         st.caption(f"Holfuy 1178 · ultima lettura {observed_at:%d/%m %H:%M}")
     else:
         st.info("Centralina Holfuy momentaneamente non raggiungibile.")
+
+with tab_skill:
+    measured = load_measured_skill()
+    if measured and measured.get("raw_forecast", {}).get("hours"):
+        skill = measured["raw_forecast"]
+        s1, s2, s3, s4 = st.columns(4)
+        s1.metric("Giornate verificate", skill["days"])
+        s2.metric("Giornate indovinate", skill["day_hits"])
+        s3.metric("Falsi negativi orari", skill["false_negative"])
+        s4.metric("Errore medio", f"{skill['mae_kn']:.1f} kn")
+        st.caption(
+            "Metriche prospettiche del forecast grezzo, calcolate solo su snapshot "
+            "congelati prima dell'evento e successivamente confrontati con Holfuy."
+        )
+    else:
+        st.info(
+            "La raccolta cloud è attiva. Le metriche appariranno quando il primo "
+            "snapshot di domani avrà il corrispondente dato reale."
+        )
 
 with tab_method:
     st.markdown(

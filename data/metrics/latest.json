@@ -1,0 +1,41 @@
+{
+  "generated_at_utc": "2026-07-20T08:04:19+00:00",
+  "paired_dates": [],
+  "raw_forecast": {
+    "day_accuracy": null,
+    "day_false_negative": 0,
+    "day_false_positive": 0,
+    "day_hits": 0,
+    "day_misses": 0,
+    "days": 0,
+    "false_negative": 0,
+    "false_positive": 0,
+    "hour_accuracy": null,
+    "hour_hits": 0,
+    "hour_misses": 0,
+    "hours": 0,
+    "mae_kn": null,
+    "threshold_kn": 13.0,
+    "true_negative": 0,
+    "true_positive": 0
+  },
+  "schema_version": 1,
+  "thermal_scenario_research_only": {
+    "day_accuracy": null,
+    "day_false_negative": 0,
+    "day_false_positive": 0,
+    "day_hits": 0,
+    "day_misses": 0,
+    "days": 0,
+    "false_negative": 0,
+    "false_positive": 0,
+    "hour_accuracy": null,
+    "hour_hits": 0,
+    "hour_misses": 0,
+    "hours": 0,
+    "mae_kn": null,
+    "threshold_kn": 13.0,
+    "true_negative": 0,
+    "true_positive": 0
+  }
+}
