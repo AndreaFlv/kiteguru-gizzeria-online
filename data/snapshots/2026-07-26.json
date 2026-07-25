@@ -1,0 +1,230 @@
+{
+  "hours": [
+    {
+      "boundary_layer_height_m": 380.0,
+      "cape_jkg": 0.0,
+      "direction_cardinal": "E",
+      "direction_deg": 93.0,
+      "hour": 10,
+      "precipitation_mm": 0.0,
+      "precipitation_probability_pct": 0.0,
+      "radiation": 490.0,
+      "raw_gust_kn": 10.1,
+      "raw_speed_kn": 4.1,
+      "regional": {
+        "cross_isthmus": 3.1,
+        "dP_ionio_mare": 1.2,
+        "dT_land_sea": -3.4,
+        "dT_land_sst": -2.7,
+        "sea_surface_temp_c": 28.4,
+        "synoptic_kn": 7.5
+      },
+      "scenario_speed_kn": 4.1,
+      "weather_code": 3
+    },
+    {
+      "boundary_layer_height_m": 525.0,
+      "cape_jkg": 0.0,
+      "direction_cardinal": "E",
+      "direction_deg": 96.0,
+      "hour": 11,
+      "precipitation_mm": 0.0,
+      "precipitation_probability_pct": 0.0,
+      "radiation": 561.0,
+      "raw_gust_kn": 8.6,
+      "raw_speed_kn": 2.0,
+      "regional": {
+        "cross_isthmus": 3.3,
+        "dP_ionio_mare": 0.7,
+        "dT_land_sea": -1.9,
+        "dT_land_sst": -1.1,
+        "sea_surface_temp_c": 28.5,
+        "synoptic_kn": 2.9
+      },
+      "scenario_speed_kn": 2.0,
+      "weather_code": 3
+    },
+    {
+      "boundary_layer_height_m": 1065.0,
+      "cape_jkg": 0.0,
+      "direction_cardinal": "W",
+      "direction_deg": 272.0,
+      "hour": 12,
+      "precipitation_mm": 0.0,
+      "precipitation_probability_pct": 0.0,
+      "radiation": 738.0,
+      "raw_gust_kn": 8.6,
+      "raw_speed_kn": 5.4,
+      "regional": {
+        "cross_isthmus": 2.9,
+        "dP_ionio_mare": 0.6,
+        "dT_land_sea": 0.2,
+        "dT_land_sst": 1.0,
+        "sea_surface_temp_c": 28.6,
+        "synoptic_kn": 1.2
+      },
+      "scenario_speed_kn": 9.31667173509433,
+      "weather_code": 3
+    },
+    {
+      "boundary_layer_height_m": 940.0,
+      "cape_jkg": 0.0,
+      "direction_cardinal": "S",
+      "direction_deg": 189.0,
+      "hour": 13,
+      "precipitation_mm": 0.0,
+      "precipitation_probability_pct": 0.0,
+      "radiation": 751.0,
+      "raw_gust_kn": 9.1,
+      "raw_speed_kn": 2.6,
+      "regional": {
+        "cross_isthmus": 5.6,
+        "dP_ionio_mare": 0.8,
+        "dT_land_sea": 1.8,
+        "dT_land_sst": 2.5,
+        "sea_surface_temp_c": 28.7,
+        "synoptic_kn": 4.1
+      },
+      "scenario_speed_kn": 2.6,
+      "weather_code": 3
+    },
+    {
+      "boundary_layer_height_m": 480.0,
+      "cape_jkg": 0.0,
+      "direction_cardinal": "N",
+      "direction_deg": 353.0,
+      "hour": 14,
+      "precipitation_mm": 0.0,
+      "precipitation_probability_pct": 0.0,
+      "radiation": 563.0,
+      "raw_gust_kn": 4.7,
+      "raw_speed_kn": 1.6,
+      "regional": {
+        "cross_isthmus": 5.4,
+        "dP_ionio_mare": 0.6,
+        "dT_land_sea": 1.5,
+        "dT_land_sst": 2.5,
+        "sea_surface_temp_c": 28.8,
+        "synoptic_kn": 4.1
+      },
+      "scenario_speed_kn": 1.6,
+      "weather_code": 3
+    },
+    {
+      "boundary_layer_height_m": 545.0,
+      "cape_jkg": 0.0,
+      "direction_cardinal": "WNW",
+      "direction_deg": 291.0,
+      "hour": 15,
+      "precipitation_mm": 0.0,
+      "precipitation_probability_pct": 0.0,
+      "radiation": 675.0,
+      "raw_gust_kn": 6.6,
+      "raw_speed_kn": 3.3,
+      "regional": {
+        "cross_isthmus": 4.1,
+        "dP_ionio_mare": 0.5,
+        "dT_land_sea": 1.6,
+        "dT_land_sst": 2.6,
+        "sea_surface_temp_c": 28.8,
+        "synoptic_kn": 4.8
+      },
+      "scenario_speed_kn": 9.20625,
+      "weather_code": 3
+    },
+    {
+      "boundary_layer_height_m": 575.0,
+      "cape_jkg": 90.0,
+      "direction_cardinal": "WNW",
+      "direction_deg": 300.0,
+      "hour": 16,
+      "precipitation_mm": 0.0,
+      "precipitation_probability_pct": 0.0,
+      "radiation": 701.0,
+      "raw_gust_kn": 17.3,
+      "raw_speed_kn": 10.1,
+      "regional": {
+        "cross_isthmus": 3.4,
+        "dP_ionio_mare": -0.2,
+        "dT_land_sea": 2.3,
+        "dT_land_sst": 2.9,
+        "sea_surface_temp_c": 28.9,
+        "synoptic_kn": 7.9
+      },
+      "scenario_speed_kn": 15.902278892406873,
+      "weather_code": 1
+    },
+    {
+      "boundary_layer_height_m": 555.0,
+      "cape_jkg": 20.0,
+      "direction_cardinal": "WNW",
+      "direction_deg": 301.0,
+      "hour": 17,
+      "precipitation_mm": 0.0,
+      "precipitation_probability_pct": 0.0,
+      "radiation": 576.0,
+      "raw_gust_kn": 18.1,
+      "raw_speed_kn": 8.8,
+      "regional": {
+        "cross_isthmus": 2.0,
+        "dP_ionio_mare": -0.5,
+        "dT_land_sea": 2.7,
+        "dT_land_sst": 3.2,
+        "sea_surface_temp_c": 29.0,
+        "synoptic_kn": 7.6
+      },
+      "scenario_speed_kn": 12.835716510700713,
+      "weather_code": 1
+    },
+    {
+      "boundary_layer_height_m": 445.0,
+      "cape_jkg": 10.0,
+      "direction_cardinal": "WNW",
+      "direction_deg": 284.0,
+      "hour": 18,
+      "precipitation_mm": 0.0,
+      "precipitation_probability_pct": 3.0,
+      "radiation": 389.0,
+      "raw_gust_kn": 15.7,
+      "raw_speed_kn": 7.2,
+      "regional": {
+        "cross_isthmus": -3.6,
+        "dP_ionio_mare": -0.5,
+        "dT_land_sea": 0.8,
+        "dT_land_sst": 1.2,
+        "sea_surface_temp_c": 29.0,
+        "synoptic_kn": 6.2
+      },
+      "scenario_speed_kn": 9.264478732996876,
+      "weather_code": 1
+    },
+    {
+      "boundary_layer_height_m": 265.0,
+      "cape_jkg": 110.0,
+      "direction_cardinal": "SW",
+      "direction_deg": 229.0,
+      "hour": 19,
+      "precipitation_mm": 0.0,
+      "precipitation_probability_pct": 3.0,
+      "radiation": 206.0,
+      "raw_gust_kn": 11.5,
+      "raw_speed_kn": 4.1,
+      "regional": {
+        "cross_isthmus": -3.1,
+        "dP_ionio_mare": -0.3,
+        "dT_land_sea": -0.9,
+        "dT_land_sst": -0.6,
+        "sea_surface_temp_c": 29.0,
+        "synoptic_kn": 1.7
+      },
+      "scenario_speed_kn": 4.841029903639205,
+      "weather_code": 2
+    }
+  ],
+  "made_at_utc": "2026-07-25T19:36:49+00:00",
+  "scenario_status": "uncalibrated_physical_prior",
+  "schema_version": 1,
+  "source": "Open-Meteo Forecast API",
+  "spot": "Gizzeria / Hang Loose Beach",
+  "target_date": "2026-07-26"
+}
