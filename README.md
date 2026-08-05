@@ -1,8 +1,8 @@
 # KiteGuru Gizzeria Online
 
 Dashboard mobile pubblica per consultare dal browser la previsione del vento di
-domani e dopodomani a Gizzeria, con lettura termica locale, confronto dei modelli
-e dato live della centralina Holfuy.
+oggi, domani e dopodomani a Gizzeria, con lettura termica locale, confronto dei
+modelli e dato live della centralina Holfuy. La selezione predefinita è oggi.
 
 All'apertura mostra per prima la lettura in tempo reale della stazione Holfuy
 1178 (vento, raffica, direzione e timestamp) e lo scostamento rispetto al valore

@@ -55,7 +55,7 @@ st.markdown(
 spot = get_spot("gizzeria")
 today = datetime.now(ZoneInfo(spot.timezone)).date()
 WEEKDAYS_IT = ("lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica")
-DAY_OPTIONS = {"Domani": 1, "Dopodomani": 2}
+DAY_OPTIONS = {"Oggi": 0, "Domani": 1, "Dopodomani": 2}
 
 
 @st.cache_data(ttl=900, show_spinner=False)
