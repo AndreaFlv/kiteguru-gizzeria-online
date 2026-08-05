@@ -13,3 +13,10 @@ streamlit run streamlit_app.py
 
 La dashboard pubblica e' stateless: non contiene il database o file privati del
 computer che raccoglie lo storico.
+
+## Telegram
+
+`python -m cloud.send_telegram_forecast --dry-run` genera localmente il testo
+esatto dell'avviso per domani e dopodomani senza trasmetterlo. Il workflow
+`Send Telegram forecast` lo invia ogni giorno alle 07:30 Europe/Rome quando nel
+repository sono configurati i secret `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID`.
