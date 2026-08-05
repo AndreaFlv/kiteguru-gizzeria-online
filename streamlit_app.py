@@ -16,7 +16,7 @@ import streamlit as st
 
 from kiteguru.config import get_spot
 from kiteguru.correction import apply_correction
-from kiteguru.models import KiteProfile
+from kiteguru.models import ForecastHour, KiteProfile
 from kiteguru.providers.holfuy_chart import HolfuyChartProvider
 from kiteguru.providers.open_meteo import OpenMeteoProvider
 from kiteguru.providers.open_meteo_models import fetch_model_winds
@@ -77,7 +77,7 @@ def load_models(target_iso: str):
     return fetch_model_winds(spot, target_date)
 
 
-@st.cache_data(ttl=300, show_spinner=False)
+@st.cache_data(ttl=60, show_spinner=False)
 def load_station():
     obs = HolfuyChartProvider().fetch_current(spot)
     return obs.model_dump(mode="python") if obs else None
@@ -105,6 +105,76 @@ with st.sidebar:
 profile = KiteProfile(board=board, kite_size_m2=kite, weight_kg=weight)
 threshold = minimum_wind(profile)
 
+st.markdown(
+    """
+    <div class="kg-hero">
+      <h1>🌬️ KiteGuru · Gizzeria</h1>
+      <p>Holfuy 1178 · Hang Loose Beach · dato reale aggiornato automaticamente</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+station = load_station()
+if station:
+    observed_at = station["datetime"]
+    if isinstance(observed_at, str):
+        observed_at = datetime.fromisoformat(observed_at)
+
+    today_payload = load_forecast(today.isoformat())
+    today_hours = [
+        ForecastHour.model_validate(item)
+        for item in today_payload.get("hours", [])
+    ]
+    observed_local = observed_at.astimezone(ZoneInfo(spot.timezone)).replace(tzinfo=None)
+
+    def local_naive(value: datetime) -> datetime:
+        if value.tzinfo is None:
+            return value
+        return value.astimezone(ZoneInfo(spot.timezone)).replace(tzinfo=None)
+
+    nearest = min(
+        today_hours,
+        key=lambda hour: abs((local_naive(hour.datetime) - observed_local).total_seconds()),
+        default=None,
+    )
+    if nearest and abs((local_naive(nearest.datetime) - observed_local).total_seconds()) > 90 * 60:
+        nearest = None
+
+    live1, live2, live3 = st.columns(3)
+    live1.metric("VENTO REALE ORA", f"{station['wind_speed_knots']:.1f} kn")
+    live2.metric("Raffica", f"{station['wind_gusts_knots']:.1f} kn")
+    live3.metric(
+        "Direzione",
+        f"{station['wind_direction_cardinal']} · {station['wind_direction_degrees']:.0f}°",
+    )
+    if nearest:
+        delta = station["wind_speed_knots"] - nearest.wind_speed_knots
+        expected1, expected2 = st.columns(2)
+        expected1.metric(
+            f"Open-Meteo oggi alle {nearest.datetime:%H:%M}",
+            f"{nearest.wind_speed_knots:.1f} kn",
+        )
+        expected2.metric("Scostamento reale − previsto", f"{delta:+.1f} kn")
+        st.caption(
+            "Confronto operativo con il forecast odierno aggiornato: non è una verifica "
+            "prospettica congelata. Scostamento positivo = vento reale superiore al previsto."
+        )
+    else:
+        st.info("Previsione odierna non disponibile per calcolare lo scostamento live.")
+    st.caption(
+        f"Ultima lettura Holfuy 1178: {observed_at:%d/%m/%Y %H:%M} · "
+        "aggiornamento pagina ogni 60 secondi"
+    )
+    st.link_button(
+        "Apri il widget Holfuy 1178",
+        "https://widget.holfuy.com/?station=1178&su=knots&t=C&lang=it&mode=detailed",
+    )
+else:
+    st.warning("Stazione Holfuy 1178 momentaneamente non raggiungibile.")
+
+st.divider()
+st.subheader("Previsioni")
 selected_day = st.radio(
     "Giorno della previsione",
     list(DAY_OPTIONS),
@@ -117,8 +187,8 @@ target = today + timedelta(days=day_offset)
 st.markdown(
     f"""
     <div class="kg-hero">
-      <h1>🌬️ KiteGuru · Gizzeria</h1>
-      <p>Previsione di {selected_day.lower()} · {WEEKDAYS_IT[target.weekday()]} {target:%d/%m/%Y} · aggiornata automaticamente</p>
+      <h1>{selected_day} · {WEEKDAYS_IT[target.weekday()]} {target:%d/%m/%Y}</h1>
+      <p>Previsione aggiornata automaticamente</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -130,8 +200,6 @@ if not payload.get("is_real") or not payload.get("hours"):
     if payload.get("error"):
         st.caption(payload["error"])
     st.stop()
-
-from kiteguru.models import ForecastHour
 
 raw_hours = [ForecastHour.model_validate(item) for item in payload["hours"]]
 context = load_context(target.isoformat())
@@ -273,8 +341,8 @@ else:
         "La probabilità di precipitazione Open-Meteo deriva da un ensemble a risoluzione più grossolana."
     )
 
-tab_hours, tab_models, tab_live, tab_skill, tab_method = st.tabs(
-    ["Ore", "Confronto modelli", "Stazione ora", "Affidabilità", "Come leggerla"]
+tab_hours, tab_models, tab_skill, tab_method = st.tabs(
+    ["Ore", "Confronto modelli", "Affidabilità", "Come leggerla"]
 )
 with tab_hours:
     display = df[["Ora", "Open-Meteo", "Scenario termico", "Raffica", "Direzione"]].copy()
@@ -295,20 +363,6 @@ with tab_models:
         st.caption("La dispersione fra modelli è un indicatore pratico dell'incertezza meteorologica.")
     else:
         st.info("Confronto modelli temporaneamente non disponibile.")
-
-with tab_live:
-    station = load_station()
-    if station:
-        observed_at = station["datetime"]
-        if isinstance(observed_at, str):
-            observed_at = datetime.fromisoformat(observed_at)
-        a, b, c = st.columns(3)
-        a.metric("Vento reale", f"{station['wind_speed_knots']:.1f} kn")
-        b.metric("Raffica", f"{station['wind_gusts_knots']:.1f} kn")
-        c.metric("Direzione", station["wind_direction_cardinal"])
-        st.caption(f"Holfuy 1178 · ultima lettura {observed_at:%d/%m %H:%M}")
-    else:
-        st.info("Centralina Holfuy momentaneamente non raggiungibile.")
 
 with tab_skill:
     measured = load_measured_skill()
