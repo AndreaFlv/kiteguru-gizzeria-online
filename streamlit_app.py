@@ -1,4 +1,4 @@
-"""KiteGuru pubblico: previsione stateless di domani per Gizzeria.
+"""KiteGuru pubblico: previsione stateless a due giorni per Gizzeria.
 
 Entrypoint pensato per Streamlit Community Cloud. Non legge DB, file utente,
 task Windows o segreti locali: ogni visita ricava il forecast dalle fonti web.
@@ -32,7 +32,7 @@ from kiteguru.thermal_onset import estimate_onset
 
 
 st.set_page_config(
-    page_title="KiteGuru Gizzeria - domani",
+    page_title="KiteGuru Gizzeria - previsioni",
     page_icon="🌬️",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -54,8 +54,8 @@ st.markdown(
 
 spot = get_spot("gizzeria")
 today = datetime.now(ZoneInfo(spot.timezone)).date()
-target = today + timedelta(days=1)
 WEEKDAYS_IT = ("lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica")
+DAY_OPTIONS = {"Domani": 1, "Dopodomani": 2}
 
 
 @st.cache_data(ttl=900, show_spinner=False)
@@ -105,11 +105,20 @@ with st.sidebar:
 profile = KiteProfile(board=board, kite_size_m2=kite, weight_kg=weight)
 threshold = minimum_wind(profile)
 
+selected_day = st.radio(
+    "Giorno della previsione",
+    list(DAY_OPTIONS),
+    horizontal=True,
+    label_visibility="collapsed",
+)
+day_offset = DAY_OPTIONS[selected_day]
+target = today + timedelta(days=day_offset)
+
 st.markdown(
     f"""
     <div class="kg-hero">
       <h1>🌬️ KiteGuru · Gizzeria</h1>
-      <p>Previsione di domani · {WEEKDAYS_IT[target.weekday()]} {target:%d/%m/%Y} · aggiornata automaticamente</p>
+      <p>Previsione di {selected_day.lower()} · {WEEKDAYS_IT[target.weekday()]} {target:%d/%m/%Y} · aggiornata automaticamente</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -326,7 +335,7 @@ with tab_method:
         - **Open-Meteo** è il forecast atmosferico grezzo.
         - **Scenario termico** applica il prior fisico locale solo con direzioni compatibili.
         - Lo scenario non calibrato non può da solo promuovere il verdetto a **VAI**.
-        - Il massimo rinforzo applicato domani è **{max_boost:.1f} kn**.
+        - Il massimo rinforzo applicato a {selected_day.lower()} è **{max_boost:.1f} kn**.
         - La soglia del tuo assetto è **{threshold:.0f} kn**.
         - La versione pubblica non espone il database o i file del computer locale.
 
