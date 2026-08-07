@@ -5,7 +5,7 @@ task Windows o segreti locali: ogni visita ricava il forecast dalle fonti web.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -56,22 +56,53 @@ spot = get_spot("gizzeria")
 today = datetime.now(ZoneInfo(spot.timezone)).date()
 WEEKDAYS_IT = ("lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica")
 DAY_OPTIONS = {"Oggi": 0, "Domani": 1, "Dopodomani": 2}
+FORECAST_CACHE_TTL_SECONDS = 1800
+_last_valid_forecasts: dict[str, tuple[dict, datetime]] = {}
 
 
-@st.cache_data(ttl=900, show_spinner=False)
-def load_forecast(target_iso: str):
+class ForecastUnavailable(RuntimeError):
+    """Risposta Open-Meteo non utilizzabile; non deve entrare nella cache."""
+
+
+@st.cache_data(ttl=FORECAST_CACHE_TTL_SECONDS, show_spinner=False)
+def _load_valid_forecast(target_iso: str):
     target_date = datetime.fromisoformat(target_iso).date()
     result = OpenMeteoProvider().fetch(spot, target_date)
-    return result.model_dump(mode="python")
+    payload = result.model_dump(mode="python")
+    if not payload.get("is_real") or not payload.get("hours"):
+        raise ForecastUnavailable(payload.get("error") or "Open-Meteo non disponibile")
+    return payload
 
 
-@st.cache_data(ttl=900, show_spinner=False)
+def load_forecast(target_iso: str) -> tuple[dict, datetime | None]:
+    """Ritorna un forecast valido o l'ultima risposta valida dell'istanza.
+
+    Gli errori non entrano nella cache Streamlit: un 429 non prolunga quindi il
+    disservizio per gli utenti. Il fallback viene sempre dichiarato in pagina.
+    """
+    try:
+        payload = _load_valid_forecast(target_iso)
+        _last_valid_forecasts[target_iso] = (payload, datetime.now(timezone.utc))
+        return payload, None
+    except ForecastUnavailable as exc:
+        previous = _last_valid_forecasts.get(target_iso)
+        if previous:
+            return previous[0], previous[1]
+        return {
+            "is_real": False,
+            "hours": [],
+            "error": str(exc),
+            "source": OpenMeteoProvider.source,
+        }, None
+
+
+@st.cache_data(ttl=FORECAST_CACHE_TTL_SECONDS, show_spinner=False)
 def load_context(target_iso: str):
     target_date = datetime.fromisoformat(target_iso).date()
     return fetch_regional_features(spot, target_date)
 
 
-@st.cache_data(ttl=900, show_spinner=False)
+@st.cache_data(ttl=FORECAST_CACHE_TTL_SECONDS, show_spinner=False)
 def load_models(target_iso: str):
     target_date = datetime.fromisoformat(target_iso).date()
     return fetch_model_winds(spot, target_date)
@@ -121,7 +152,7 @@ if station:
     if isinstance(observed_at, str):
         observed_at = datetime.fromisoformat(observed_at)
 
-    today_payload = load_forecast(today.isoformat())
+    today_payload, today_fallback_at = load_forecast(today.isoformat())
     today_hours = [
         ForecastHour.model_validate(item)
         for item in today_payload.get("hours", [])
@@ -162,6 +193,11 @@ if station:
         )
     else:
         st.info("Previsione odierna non disponibile per calcolare lo scostamento live.")
+    if today_fallback_at:
+        st.warning(
+            "Open-Meteo e' momentaneamente limitato: confronto calcolato con "
+            f"l'ultima previsione valida acquisita alle {today_fallback_at.astimezone(ZoneInfo(spot.timezone)):%H:%M}."
+        )
     st.caption(
         f"Ultima lettura Holfuy 1178: {observed_at:%d/%m/%Y %H:%M} · "
         "aggiornamento pagina ogni 60 secondi"
@@ -194,12 +230,16 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-payload = load_forecast(target.isoformat())
+payload, fallback_at = load_forecast(target.isoformat())
 if not payload.get("is_real") or not payload.get("hours"):
-    st.error("Previsione momentaneamente non disponibile. Riprova tra qualche minuto.")
-    if payload.get("error"):
-        st.caption(payload["error"])
+    st.error("Previsione temporaneamente non disponibile. Riprova tra qualche minuto.")
     st.stop()
+
+if fallback_at:
+    st.warning(
+        "Open-Meteo e' momentaneamente limitato: mostro l'ultima previsione valida "
+        f"acquisita alle {fallback_at.astimezone(ZoneInfo(spot.timezone)):%H:%M}."
+    )
 
 raw_hours = [ForecastHour.model_validate(item) for item in payload["hours"]]
 context = load_context(target.isoformat())

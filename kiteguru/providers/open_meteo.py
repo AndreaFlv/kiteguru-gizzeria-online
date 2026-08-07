@@ -36,15 +36,39 @@ class OpenMeteoProvider:
         last_error: Exception | None = None
         for attempt in range(self.attempts):
             try:
-                response = requests.get(self.endpoint, params=params, timeout=self.timeout)
+                response = requests.get(
+                    self.endpoint,
+                    params=params,
+                    timeout=self.timeout,
+                    headers={"User-Agent": "KiteGuru-Gizzeria-public-dashboard/1.0"},
+                )
+                # Un 429 e' temporaneo, ma ritentare subito lo amplifica. Usiamo
+                # un breve backoff e lasciamo alla cache della dashboard il
+                # compito di proteggere il provider dalle richieste ripetute.
+                if response.status_code == 429:
+                    if attempt == 0 and self.attempts > 1:
+                        retry_after = response.headers.get("Retry-After")
+                        try:
+                            delay = float(retry_after) if retry_after else 2.0
+                        except ValueError:
+                            delay = 2.0
+                        time.sleep(min(max(delay, 1.0), 5.0))
+                        continue
+                    return ProviderResult(
+                        source=self.source,
+                        is_real=False,
+                        hours=[],
+                        error="Open-Meteo temporaneamente limitato (HTTP 429)",
+                    )
                 response.raise_for_status()
                 break
             except requests.RequestException as exc:
                 last_error = exc
                 if attempt + 1 < self.attempts:
-                    time.sleep(0.5 * (attempt + 1))
+                    time.sleep(min(0.5 * (attempt + 1), 2.0))
         else:
-            return ProviderResult(source=self.source, is_real=False, hours=[], error=str(last_error))
+            error = str(last_error) if last_error else "Open-Meteo non disponibile"
+            return ProviderResult(source=self.source, is_real=False, hours=[], error=error)
 
         try:
             payload = response.json()
