@@ -17,7 +17,7 @@ import streamlit as st
 from kiteguru.config import get_spot
 from kiteguru.correction import apply_correction
 from kiteguru.models import ForecastHour, KiteProfile
-from kiteguru.providers.holfuy_chart import HolfuyChartProvider
+from kiteguru.providers.holfuy_chart import HolfuyChartProvider, aggregate_hourly
 from kiteguru.providers.open_meteo import OpenMeteoProvider
 from kiteguru.providers.open_meteo_models import fetch_model_winds
 from kiteguru.public_evidence import load_verified_day_comparison as read_verified_day_comparison
@@ -113,6 +113,17 @@ def load_models(target_iso: str):
 def load_station():
     obs = HolfuyChartProvider().fetch_current(spot)
     return obs.model_dump(mode="python") if obs else None
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def load_live_holfuy_hours(target_iso: str) -> dict[int, dict]:
+    """Misure orarie correnti: utili live, ma distinte dalla verifica congelata."""
+    hourly = aggregate_hourly(HolfuyChartProvider().fetch_series(spot))
+    return {
+        hour: observation.model_dump(mode="python")
+        for (day, hour), observation in hourly.items()
+        if day == target_iso and 10 <= hour <= 19
+    }
 
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -390,15 +401,48 @@ else:
     )
 
 tab_hours, tab_verified, tab_models, tab_skill, tab_method = st.tabs(
-    ["Ore", "Verifica previsto-reale", "Confronto modelli", "Affidabilità", "Come leggerla"]
+    ["Ore", "Previsto-reale", "Confronto modelli", "Affidabilità", "Come leggerla"]
 )
 with tab_hours:
     display = df[["Ora", "Open-Meteo", "Scenario termico", "Raffica", "Direzione"]].copy()
     st.dataframe(display, hide_index=True, width="stretch")
 
 with tab_verified:
+    if target == today:
+        live_actuals = load_live_holfuy_hours(target.isoformat())
+        live_rows = []
+        for hour, raw in sorted(useful_raw.items()):
+            observed = live_actuals.get(hour)
+            if not observed:
+                continue
+            live_rows.append({
+                "Ora": f"{hour:02d}:00",
+                "Base prevista": round(raw.wind_speed_knots, 1),
+                "Raffica prevista": round(raw.wind_gusts_knots, 1),
+                "Reale base": round(float(observed["wind_speed_knots"]), 1),
+                "Reale raffica": round(float(observed["wind_gusts_knots"]), 1),
+                "Scostamento base": round(float(observed["wind_speed_knots"]) - raw.wind_speed_knots, 1),
+                "Scostamento raffica": round(float(observed["wind_gusts_knots"]) - raw.wind_gusts_knots, 1),
+            })
+        if live_rows:
+            live_df = pd.DataFrame(live_rows)
+            st.subheader("Confronto live di oggi")
+            st.dataframe(live_df, hide_index=True, width="stretch")
+            l1, l2 = st.columns(2)
+            l1.metric("Scostamento medio base", f"{live_df['Scostamento base'].mean():+.1f} kn")
+            l2.metric("Scostamento medio raffica", f"{live_df['Scostamento raffica'].mean():+.1f} kn")
+            st.caption(
+                "Confronto operativo: previsione corrente contro misure Holfuy delle ore gia' trascorse; "
+                "non sostituisce la verifica prospettica congelata."
+            )
+        else:
+            st.info("Nessuna misura oraria Holfuy disponibile finora per oggi.")
+
     verified = load_verified_day_comparison(target.isoformat())
     if verified:
+        if target == today:
+            st.divider()
+        st.subheader("Verifica prospettica archiviata")
         verified_df = pd.DataFrame(verified["rows"])
         st.dataframe(verified_df, hide_index=True, width="stretch")
         base_delta = verified_df["Scostamento base"].mean()
@@ -411,8 +455,8 @@ with tab_verified:
             "Sono mostrati solo forecast congelati prima dell'evento e misure gia' archiviate."
         )
     else:
-        st.info(
-            "Nessun confronto verificato disponibile per questa data: occorrono sia "
+        st.caption(
+            "Verifica prospettica non ancora disponibile per questa data: occorrono sia "
             "lo snapshot day-ahead sia le misure Holfuy archiviate."
         )
 
