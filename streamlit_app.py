@@ -20,6 +20,7 @@ from kiteguru.models import ForecastHour, KiteProfile
 from kiteguru.providers.holfuy_chart import HolfuyChartProvider
 from kiteguru.providers.open_meteo import OpenMeteoProvider
 from kiteguru.providers.open_meteo_models import fetch_model_winds
+from kiteguru.public_evidence import load_verified_day_comparison as read_verified_day_comparison
 from kiteguru.providers.regional import fetch_regional_features
 from kiteguru.scoring import (
     assess_day,
@@ -124,6 +125,13 @@ def load_measured_skill():
         if path.exists():
             return json.loads(path.read_text(encoding="utf-8"))
     return None
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def load_verified_day_comparison(target_iso: str) -> dict | None:
+    return read_verified_day_comparison(
+        Path(__file__).resolve().parent / "data", target_iso
+    )
 
 
 with st.sidebar:
@@ -381,12 +389,32 @@ else:
         "La probabilità di precipitazione Open-Meteo deriva da un ensemble a risoluzione più grossolana."
     )
 
-tab_hours, tab_models, tab_skill, tab_method = st.tabs(
-    ["Ore", "Confronto modelli", "Affidabilità", "Come leggerla"]
+tab_hours, tab_verified, tab_models, tab_skill, tab_method = st.tabs(
+    ["Ore", "Verifica previsto-reale", "Confronto modelli", "Affidabilità", "Come leggerla"]
 )
 with tab_hours:
     display = df[["Ora", "Open-Meteo", "Scenario termico", "Raffica", "Direzione"]].copy()
     st.dataframe(display, hide_index=True, width="stretch")
+
+with tab_verified:
+    verified = load_verified_day_comparison(target.isoformat())
+    if verified:
+        verified_df = pd.DataFrame(verified["rows"])
+        st.dataframe(verified_df, hide_index=True, width="stretch")
+        base_delta = verified_df["Scostamento base"].mean()
+        gust_delta = verified_df["Scostamento raffica"].mean()
+        v1, v2 = st.columns(2)
+        v1.metric("Scostamento medio base", f"{base_delta:+.1f} kn")
+        v2.metric("Scostamento medio raffica", f"{gust_delta:+.1f} kn")
+        st.caption(
+            "Scostamento = misura Holfuy meno previsione Open-Meteo. "
+            "Sono mostrati solo forecast congelati prima dell'evento e misure gia' archiviate."
+        )
+    else:
+        st.info(
+            "Nessun confronto verificato disponibile per questa data: occorrono sia "
+            "lo snapshot day-ahead sia le misure Holfuy archiviate."
+        )
 
 with tab_models:
     models = load_models(target.isoformat())
