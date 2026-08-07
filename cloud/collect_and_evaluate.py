@@ -13,6 +13,7 @@ from kiteguru.evaluation import operational_summary
 from kiteguru.providers.holfuy_chart import HolfuyChartProvider, aggregate_hourly
 from kiteguru.providers.open_meteo import OpenMeteoProvider
 from kiteguru.providers.regional import fetch_regional_features
+from kiteguru.public_forecast_cache import write_public_forecast
 from kiteguru.thermal_model import train as train_thermal_model
 
 
@@ -217,11 +218,16 @@ def main() -> None:
     local_today = datetime.now(ZoneInfo(spot.timezone)).date()
     target = args.target_date or (local_today + timedelta(days=1))
     snapshot, created = freeze_forecast(target)
+    public_forecasts = [
+        write_public_forecast(ROOT, spot, local_today + timedelta(days=offset))
+        for offset in range(3)
+    ]
     actuals = collect_actuals()
     metrics = evaluate()
     print(json.dumps({
         "snapshot": str(snapshot.relative_to(ROOT)),
         "snapshot_created": created,
+        "public_forecasts_refreshed": len(public_forecasts),
         "actual_files_changed": len(actuals),
         "paired_dates": len(metrics["paired_dates"]),
     }, ensure_ascii=False))

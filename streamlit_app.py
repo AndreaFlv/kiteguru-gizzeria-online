@@ -21,6 +21,7 @@ from kiteguru.providers.holfuy_chart import HolfuyChartProvider, aggregate_hourl
 from kiteguru.providers.open_meteo import OpenMeteoProvider
 from kiteguru.providers.open_meteo_models import fetch_model_winds
 from kiteguru.public_evidence import load_verified_day_comparison as read_verified_day_comparison
+from kiteguru.public_forecast_cache import load_public_forecast
 from kiteguru.providers.regional import fetch_regional_features
 from kiteguru.scoring import (
     assess_day,
@@ -54,6 +55,7 @@ st.markdown(
 )
 
 spot = get_spot("gizzeria")
+ROOT = Path(__file__).resolve().parent
 today = datetime.now(ZoneInfo(spot.timezone)).date()
 WEEKDAYS_IT = ("lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica")
 DAY_OPTIONS = {"Oggi": 0, "Domani": 1, "Dopodomani": 2}
@@ -89,6 +91,11 @@ def load_forecast(target_iso: str) -> tuple[dict, datetime | None]:
         previous = _last_valid_forecasts.get(target_iso)
         if previous:
             return previous[0], previous[1]
+        persisted = load_public_forecast(
+            ROOT, datetime.fromisoformat(target_iso).date(),
+        )
+        if persisted:
+            return persisted
         return {
             "is_real": False,
             "hours": [],
@@ -256,7 +263,7 @@ if not payload.get("is_real") or not payload.get("hours"):
 
 if fallback_at:
     st.warning(
-        "Open-Meteo e' momentaneamente limitato: mostro l'ultima previsione valida "
+        "Open-Meteo e' momentaneamente limitato: mostro la previsione di riserva "
         f"acquisita alle {fallback_at.astimezone(ZoneInfo(spot.timezone)):%H:%M}."
     )
 
