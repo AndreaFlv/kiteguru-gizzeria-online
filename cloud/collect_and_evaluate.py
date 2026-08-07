@@ -218,16 +218,27 @@ def main() -> None:
     local_today = datetime.now(ZoneInfo(spot.timezone)).date()
     target = args.target_date or (local_today + timedelta(days=1))
     snapshot, created = freeze_forecast(target)
-    public_forecasts = [
-        write_public_forecast(ROOT, spot, local_today + timedelta(days=offset))
-        for offset in range(3)
-    ]
+    public_forecasts = []
+    public_forecast_errors = []
+    for offset in range(3):
+        public_target = local_today + timedelta(days=offset)
+        try:
+            public_forecasts.append(
+                write_public_forecast(ROOT, spot, public_target),
+            )
+        except RuntimeError as exc:
+            # Preserve the last committed fallback instead of failing the
+            # leakage-safe snapshot/truth pipeline for an operational refresh.
+            public_forecast_errors.append(
+                f"{public_target.isoformat()}: {exc}",
+            )
     actuals = collect_actuals()
     metrics = evaluate()
     print(json.dumps({
         "snapshot": str(snapshot.relative_to(ROOT)),
         "snapshot_created": created,
         "public_forecasts_refreshed": len(public_forecasts),
+        "public_forecast_errors": public_forecast_errors,
         "actual_files_changed": len(actuals),
         "paired_dates": len(metrics["paired_dates"]),
     }, ensure_ascii=False))
