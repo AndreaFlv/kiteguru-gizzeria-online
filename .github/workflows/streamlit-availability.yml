@@ -1,0 +1,41 @@
+name: Keep Streamlit app available
+
+on:
+  schedule:
+    # Community Cloud iberna dopo 12 ore senza traffico. Quattro ore lasciano
+    # margine anche in caso di ritardi occasionali dello scheduler GitHub.
+    - cron: "23 */4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kiteguru-streamlit-availability
+  cancel-in-progress: false
+
+jobs:
+  check-and-wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install browser controller
+        run: pip install "playwright>=1.55,<2"
+      - name: Open, wake and verify the public app
+        run: >-
+          python scripts/check_streamlit_availability.py
+          --browser-executable /usr/bin/google-chrome
+          --output streamlit-availability.json
+      - name: Preserve availability evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: streamlit-availability-${{ github.run_id }}
+          path: streamlit-availability.json
+          if-no-files-found: warn
+          retention-days: 30
