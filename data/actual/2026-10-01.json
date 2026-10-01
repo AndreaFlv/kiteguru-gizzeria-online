@@ -1,0 +1,45 @@
+{
+  "collected_at_utc": "2026-10-01T22:43:42+00:00",
+  "complete_useful_hours": false,
+  "date": "2026-10-01",
+  "hours": [
+    {
+      "direction_cardinal": "NW",
+      "direction_deg": 321.01782806398694,
+      "hour": 15,
+      "wind_gust_kn": 14.6,
+      "wind_speed_kn": 12.1
+    },
+    {
+      "direction_cardinal": "NW",
+      "direction_deg": 307.1584958585639,
+      "hour": 16,
+      "wind_gust_kn": 14.6,
+      "wind_speed_kn": 11.6
+    },
+    {
+      "direction_cardinal": "NW",
+      "direction_deg": 312.09796496129303,
+      "hour": 17,
+      "wind_gust_kn": 14.6,
+      "wind_speed_kn": 10.2
+    },
+    {
+      "direction_cardinal": "NW",
+      "direction_deg": 324.06304590784765,
+      "hour": 18,
+      "wind_gust_kn": 11.9,
+      "wind_speed_kn": 6.8
+    },
+    {
+      "direction_cardinal": "NE",
+      "direction_deg": 41.036184896606485,
+      "hour": 19,
+      "wind_gust_kn": 5.9,
+      "wind_speed_kn": 2.1
+    }
+  ],
+  "schema_version": 1,
+  "source": "Holfuy (grafico pubblico)",
+  "spot": "Gizzeria / Hang Loose Beach"
+}
